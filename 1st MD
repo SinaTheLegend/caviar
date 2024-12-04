@@ -1,0 +1,1 @@
+This repository contains a Molecular Dynamics (MD) simulation program written in C++. The simulation allows for the modeling and analysis of particle systems interacting through the Lennard-Jones potential. Additionally, the project includes bindings to Python using PyBind11 for ease of use and integration with other Python-based tools.
