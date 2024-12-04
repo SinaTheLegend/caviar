@@ -1,0 +1,16 @@
+import molecular_dynamics
+
+# Initialize the simulation with the number of particles
+md = molecular_dynamics.MolecularDynamics(numParticles=2)
+
+# Set the properties of the particles
+md.setParticle(0, mass=1.0, position=[-5, 0, 0], velocity=[0, 0, 0])
+md.setParticle(1, mass=1.0, position=[5, 0, 0], velocity=[0, 0, 0])
+
+# Run the simulation for a specified number of steps
+md.runSimulation(steps=1000)
+
+# Get the final state of the particles
+particles = md.getParticles()
+for particle in particles:
+    print(f"Position: {particle.position}, Velocity: {particle.velocity}")
