@@ -1,1 +1,134 @@
-This repository contains a Molecular Dynamics (MD) simulation program written in C++. The simulation allows for the modeling and analysis of particle systems interacting through the Lennard-Jones potential. Additionally, the project includes bindings to Python using PyBind11 for ease of use and integration with other Python-based tools.
+// MolecularDynamics.h
+
+#ifndef MOLECULARDYNAMICS_H
+#define MOLECULARDYNAMICS_H
+
+#include <vector>
+#include <cmath>
+#include <pybind11/pybind11.h>
+
+class MolecularDynamics {
+public:
+    struct Particle {
+        double mass;
+        std::vector<double> position;
+        std::vector<double> velocity;
+    };
+
+    MolecularDynamics(int numParticles);
+    void setParticle(int index, double mass, const std::vector<double>& position, const std::vector<double>& velocity);
+    void computeForces();
+    void integrate(double dt);
+    void runSimulation(int steps);
+    const std::vector<Particle>& getParticles() const;
+
+private:
+    std::vector<Particle> particles;
+    std::vector<std::vector<double>> forces;
+
+    void clearForces();
+    std::vector<double> computeLennardJonesForce(const Particle& p1, const Particle& p2);
+    void updateMachineLearningModel();
+};
+
+#endif // MOLECULARDYNAMICS_H
+// MolecularDynamics.cpp
+
+#include "MolecularDynamics.h"
+#include <random>
+
+MolecularDynamics::MolecularDynamics(int numParticles) {
+    particles.resize(numParticles);
+    forces.resize(numParticles, std::vector<double>(3, 0.0));
+}
+
+void MolecularDynamics::setParticle(int index, double mass, const std::vector<double>& position, const std::vector<double>& velocity) {
+    particles[index].mass = mass;
+    particles[index].position = position;
+    particles[index].velocity = velocity;
+}
+
+void MolecularDynamics::clearForces() {
+    for (auto& force : forces) {
+        std::fill(force.begin(), force.end(), 0.0);
+    }
+}
+
+std::vector<double> MolecularDynamics::computeLennardJonesForce(const Particle& p1, const Particle& p2) {
+    double epsilon = 1.0;
+    double sigma = 1.0;
+    std::vector<double> force(3);
+    
+    double dx = p1.position[0] - p2.position[0];
+    double dy = p1.position[1] - p2.position[1];
+    double dz = p1.position[2] - p2.position[2];
+    double r2 = dx * dx + dy * dy + dz * dz;
+    double r6 = r2 * r2 * r2;
+    double r12 = r6 * r6;
+    double r = std::sqrt(r2);
+    
+    if (r < 1e-6) return force; // Avoid division by zero
+    
+    double f = 24 * epsilon * (2 * sigma12 / r12 - sigma6 / r6) / r2;
+
+    force[0] = f * dx;
+    force[1] = f * dy;
+    force[2] = f * dz;
+
+    return force;
+}
+
+void MolecularDynamics::computeForces() {
+    clearForces();
+    int n = particles.size();
+    for (int i = 0; i < n; ++i) {
+        for (int j = i + 1; j < n; ++j) {
+            auto force = computeLennardJonesForce(particles[i], particles[j]);
+            forces[i][0] += force[0];
+            forces[i][1] += force[1];
+            forces[i][2] += force[2];
+            forces[j][0] -= force[0];
+            forces[j][1] -= force[1];
+            forces[j][2] -= force[2];
+        }
+    }
+}
+
+void MolecularDynamics::integrate(double dt) {
+    for (size_t i = 0; i < particles.size(); ++i) {
+        particles[i].velocity[0] += forces[i][0] / particles[i].mass * dt;
+        particles[i].velocity[1] += forces[i][1] / particles[i].mass * dt;
+        particles[i].velocity[2] += forces[i][2] / particles[i].mass * dt;
+
+        particles[i].position[0] += particles[i].velocity[0] * dt;
+        particles[i].position[1] += particles[i].velocity[1] * dt;
+        particles[i].position[2] += particles[i].velocity[2] * dt;
+    }
+}
+
+void MolecularDynamics::runSimulation(int steps) {
+    double dt = 0.01;
+    for (int i = 0; i < steps; ++i) {
+        computeForces();
+        integrate(dt);
+        updateMachineLearningModel();  // Call your machine learning update function here
+    }
+}
+
+const std::vector<MolecularDynamics::Particle>& MolecularDynamics::getParticles() const {
+    return particles;
+}
+// pybind.cpp
+
+#include <pybind11/pybind11.h>
+#include "MolecularDynamics.h"
+
+namespace py = pybind11;
+
+PYBIND11_MODULE(molecular_dynamics, m) {
+    py::class_<MolecularDynamics>(m, "MolecularDynamics")
+        .def(py::init<int>())
+        .def("setParticle", &MolecularDynamics::setParticle)
+        .def("runSimulation", &MolecularDynamics::runSimulation)
+        .def("getParticles", &MolecularDynamics::getParticles);
+}
